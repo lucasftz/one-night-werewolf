@@ -82,4 +82,18 @@ client.on("messageReactionRemove", (reaction, user) => {
   }
 });
 
+client.on("messageCreate", async (message) => {
+  const repliedToBot = message.mentions.repliedUser === client.user;
+
+  if (repliedToBot) {
+    const messages = message.channel.messages;
+    const lobbies = lobbyHandler.getLobbies();
+
+    for (const _lobby of lobbies) {
+      const lobbyFromMessage = await messages.fetch(_lobby.getID()!);
+      if (lobbyFromMessage) return;
+    }
+  }
+});
+
 client.login(process.env.TOKEN);
