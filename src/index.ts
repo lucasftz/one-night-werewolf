@@ -1,6 +1,5 @@
 import "dotenv/config";
 import Discord from "discord.js";
-import Lobby from "./classes/Lobby";
 import LobbyHandler from "./classes/LobbyHandler";
 import Game from "./classes/Game";
 import GameHandler from "./classes/GameHandler";
@@ -18,6 +17,8 @@ const client = new Discord.Client({
 client.on("ready", () => {
   console.log(`Logged in as ${client.user?.tag}`);
 });
+
+/* === CREATE ============================================================== */
 
 client.on("messageCreate", (message) => {
   if (message.content === `${prefix}create`) {
@@ -42,6 +43,19 @@ client.on("messageCreate", (message) => {
   }
 });
 
+/* === ADD <ROLE> ========================================================== */
+
+client.on("messageCreate", async (message) => {
+  const repliedToBot = message.mentions.repliedUser === client.user;
+  const isLobby = lobbyHandler.hasLobbyByID(message.channelId);
+
+  if (repliedToBot && isLobby) {
+    // do something
+  }
+});
+
+/* === LOBBY REACTION HANDLING ============================================= */
+
 client.on("messageReactionAdd", (reaction, user) => {
   const isLobby = lobbyHandler.hasLobbyByID(reaction.message.channelId);
   const notBot = user !== client.user;
@@ -60,7 +74,7 @@ client.on("messageReactionAdd", (reaction, user) => {
   // remove emojis from players that are not joinEmoji
   if (isLobby && notBot && !isJoinEmoji) {
     const lobby = lobbyHandler.getLobbyByID(reaction.message.id);
-    // if the message was playEmoji and there are enough players to join, start a game
+    // if the message was playEmoji, start a game
     if (playEmoji && lobby!.getPlayers().length >= 2) {
       reaction.message.delete().catch((error) => console.log(error));
       const game = new Game(lobby?.getPlayers()!);
@@ -85,19 +99,10 @@ client.on("messageReactionRemove", (reaction, user) => {
     const lobby = lobbyHandler.getLobbyByID(reaction.message.channelId);
     reaction.message.edit({ embeds: [lobby!.removePlayer(user.username!)] });
 
-    // if there are not not enough players to start a game, remove the playEmoji
+    // if there are not not enough players to start a game, remove playEmoji
     if (lobby?.getPlayers().length ?? 0 < 2) {
       reaction.message.reactions.cache.get(playEmoji)?.remove();
     }
-  }
-});
-
-client.on("messageCreate", async (message) => {
-  const repliedToBot = message.mentions.repliedUser === client.user;
-  const isLobby = lobbyHandler.hasLobbyByID(message.channelId);
-
-  if (repliedToBot && isLobby) {
-    // do something
   }
 });
 
