@@ -5,6 +5,7 @@ import LobbyHandler from "./classes/LobbyHandler";
 import Game from "./classes/Game";
 import GameHandler from "./classes/GameHandler";
 import { prefix, emojis } from "./constants";
+import { isLobbyEror } from "./constants/errors";
 
 const lobbyHandler = new LobbyHandler();
 const gameHandler = new GameHandler();
@@ -18,8 +19,20 @@ client.on("ready", () => {
   console.log(`Logged in as ${client.user?.tag}`);
 });
 
-client.on("messageCreate", (message) => {
+client.on("messageCreate", async (message) => {
   if (message.content === `${prefix}create`) {
+    // check if a lobby doesn't already exist in the channel
+    const messages = message.channel.messages;
+
+    for (const _lobby of lobbyHandler.getLobbies()) {
+      const lobbyFromMessage = await messages.fetch(_lobby.getID()!);
+      // if there already is a lobby in the channel, don't create a new lobby
+      if (lobbyFromMessage) {
+        message.channel.send({ embeds: [isLobbyEror] });
+        return;
+      }
+    }
+
     const lobby = new Lobby(message.author);
     message.channel
       .send({ embeds: [lobby.embed] })
