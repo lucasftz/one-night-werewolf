@@ -2,9 +2,12 @@ import "dotenv/config";
 import Discord from "discord.js";
 import Lobby from "./classes/Lobby";
 import LobbyHandler from "./classes/LobbyHandler";
+import Game from "./classes/Game";
+import GameHandler from "./classes/GameHandler";
 import { prefix, emojis } from "./constants";
 
 const lobbyHandler = new LobbyHandler();
+const gameHandler = new GameHandler();
 const { joinEmoji, playEmoji } = emojis;
 
 const client = new Discord.Client({
@@ -35,20 +38,30 @@ client.on("messageReactionAdd", async (reaction, user) => {
   const isJoinEmoji = reaction.emoji.name === joinEmoji;
   const isPlayEmoji = reaction.emoji.name === playEmoji;
 
-  // add players to the lobby who react with :white_check_mark:
+  // add players to the lobby who react with joinEmoji
   if (isLobby && notBot && isJoinEmoji) {
     const lobby = lobbyHandler.getLobbyByID(reaction.message.id);
     reaction.message.edit({ embeds: [lobby!.addPlayer(user.username!)] });
 
-    // if there are enough people to start a game, send a playEmoji
+    // if there are enough people to start a game, send playEmoji
     if (lobby?.getPlayers().length === 2) reaction.message.react(playEmoji);
   }
 
-  // remove emojis from players that are not :white_check_mark:
+  // remove emojis from players that are not joinEmoji
   if (isLobby && notBot && !isJoinEmoji) {
-    reaction.remove().catch((error) => console.log(error));
-    // but if the emoji was the play emoji, add it back
-    if (isPlayEmoji) reaction.message.react(playEmoji);
+    const lobby = lobbyHandler.getLobbyByID(reaction.message.id);
+    // if the message was playEmoji and there are enough players to join, start a game
+    if (playEmoji && lobby!.getPlayers().length >= 2) {
+      reaction.message.delete().catch((error) => console.log(error));
+      const game = new Game(lobby?.getPlayers()!);
+      gameHandler.addGame(game);
+      lobbyHandler.removeLobby(lobby!);
+      reaction.message.channel.send({ embeds: [game.embed] });
+    } else {
+      reaction.remove().catch((error) => console.log(error));
+      // but if the emoji was playEmoji, add it back
+      if (isPlayEmoji) reaction.message.react(playEmoji);
+    }
   }
 });
 
@@ -57,7 +70,7 @@ client.on("messageReactionRemove", (reaction, user) => {
   const notBot = user !== client.user;
   const isJoinEmoji = reaction.emoji.name === joinEmoji;
 
-  // remove players from the lobby who unreact with :white_check_mark:
+  // remove players from the lobby who unreact with joinEmoji
   if (isLobby && notBot && isJoinEmoji) {
     const lobby = lobbyHandler.getLobbyByID(reaction.message.id);
     reaction.message.edit({ embeds: [lobby!.removePlayer(user.username!)] });

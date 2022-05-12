@@ -4,6 +4,7 @@ class LobbyHandler {
   private _lobbies: Lobby[];
   getLobbies: () => Lobby[];
   addLobby: (lobby: Lobby) => void;
+  removeLobby: (lobby: Lobby) => void;
   getLobbyByID: (id: string) => Lobby | undefined;
   hasLobbyByID: (id: string) => boolean;
 
@@ -14,6 +15,10 @@ class LobbyHandler {
 
     this.addLobby = (lobby: Lobby) => {
       this._lobbies.push(lobby);
+    };
+
+    this.removeLobby = (lobby: Lobby) => {
+      this._lobbies = this._lobbies.filter((oldLobby) => oldLobby !== lobby);
     };
 
     this.getLobbyByID = (id: string) => {
