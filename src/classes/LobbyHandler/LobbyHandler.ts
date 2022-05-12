@@ -1,32 +1,32 @@
+import { User } from "discord.js";
 import Lobby from "../Lobby";
 
 class LobbyHandler {
-  private _lobbies: Lobby[];
-  getLobbies: () => Lobby[];
-  addLobby: (lobby: Lobby) => void;
-  removeLobby: (lobby: Lobby) => void;
-  getLobbyByID: (id: string) => Lobby | undefined;
-  hasLobbyByID: (id: string) => boolean;
+  private _lobbies: { [channelID: string]: Lobby };
+  createLobbyAt: (channelID: string, creator: User) => Lobby;
+  removeLobbyByID: (channelID: string) => void;
+  getLobbyByID: (channelID: string) => Lobby | undefined;
+  hasLobbyByID: (channelID: string) => boolean;
 
   constructor() {
-    this._lobbies = [];
+    this._lobbies = {};
 
-    this.getLobbies = () => this._lobbies;
-
-    this.addLobby = (lobby: Lobby) => {
-      this._lobbies.push(lobby);
+    this.createLobbyAt = (channelID: string, creator: User) => {
+      const newLobby = new Lobby(creator);
+      this._lobbies[channelID] = newLobby;
+      return newLobby;
     };
 
-    this.removeLobby = (lobby: Lobby) => {
-      this._lobbies = this._lobbies.filter((oldLobby) => oldLobby !== lobby);
+    this.removeLobbyByID = (channelID: string) => {
+      delete this._lobbies[channelID];
     };
 
-    this.getLobbyByID = (id: string) => {
-      return this._lobbies.find((lobby) => lobby.getID() === id);
+    this.getLobbyByID = (channelID: string) => {
+      return this._lobbies[channelID];
     };
 
-    this.hasLobbyByID = (id: string): boolean => {
-      return this._lobbies.map((lobby) => lobby.getID()).includes(id);
+    this.hasLobbyByID = (channelID: string): boolean => {
+      return this._lobbies.hasOwnProperty(channelID);
     };
   }
 }

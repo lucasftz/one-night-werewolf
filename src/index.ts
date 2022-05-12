@@ -19,41 +19,38 @@ client.on("ready", () => {
   console.log(`Logged in as ${client.user?.tag}`);
 });
 
-client.on("messageCreate", async (message) => {
+client.on("messageCreate", (message) => {
   if (message.content === `${prefix}create`) {
     // check if a lobby doesn't already exist in the channel
-    const messages = message.channel.messages;
-
-    for (const _lobby of lobbyHandler.getLobbies()) {
-      const lobbyFromMessage = await messages.fetch(_lobby.getID()!);
+    if (lobbyHandler.hasLobbyByID(message.channelId)) {
       // if there already is a lobby in the channel, don't create a new lobby
-      if (lobbyFromMessage) {
-        message.channel.send({ embeds: [isLobbyEror] });
-        return;
-      }
+      message.channel.send({ embeds: [isLobbyEror] });
+    } else {
+      // otherwise, do create a new lobby
+      const newLobby = lobbyHandler.createLobbyAt(
+        message.channelId,
+        message.author
+      );
+      message.channel
+        .send({ embeds: [newLobby.embed] })
+        .then((embedMessage) => {
+          newLobby.setID(embedMessage.id);
+          embedMessage.react(joinEmoji);
+        })
+        .catch((error) => console.log(error));
     }
-
-    const lobby = new Lobby(message.author);
-    message.channel
-      .send({ embeds: [lobby.embed] })
-      .then((embedMessage) => {
-        lobby.setID(embedMessage.id);
-        embedMessage.react(joinEmoji);
-      })
-      .catch((error) => console.log(error));
-    lobbyHandler.addLobby(lobby);
   }
 });
 
-client.on("messageReactionAdd", async (reaction, user) => {
-  const isLobby = lobbyHandler.hasLobbyByID(reaction.message.id);
+client.on("messageReactionAdd", (reaction, user) => {
+  const isLobby = lobbyHandler.hasLobbyByID(reaction.message.channelId);
   const notBot = user !== client.user;
   const isJoinEmoji = reaction.emoji.name === joinEmoji;
   const isPlayEmoji = reaction.emoji.name === playEmoji;
 
   // add players to the lobby who react with joinEmoji
   if (isLobby && notBot && isJoinEmoji) {
-    const lobby = lobbyHandler.getLobbyByID(reaction.message.id);
+    const lobby = lobbyHandler.getLobbyByID(reaction.message.channelId);
     reaction.message.edit({ embeds: [lobby!.addPlayer(user.username!)] });
 
     // if there are enough people to start a game, send playEmoji
@@ -68,7 +65,7 @@ client.on("messageReactionAdd", async (reaction, user) => {
       reaction.message.delete().catch((error) => console.log(error));
       const game = new Game(lobby?.getPlayers()!);
       gameHandler.addGame(game);
-      lobbyHandler.removeLobby(lobby!);
+      lobbyHandler.removeLobbyByID(reaction.message.channelId);
       reaction.message.channel.send({ embeds: [game.embed] });
     } else {
       reaction.remove().catch((error) => console.log(error));
@@ -79,13 +76,13 @@ client.on("messageReactionAdd", async (reaction, user) => {
 });
 
 client.on("messageReactionRemove", (reaction, user) => {
-  const isLobby = lobbyHandler.hasLobbyByID(reaction.message.id);
+  const isLobby = lobbyHandler.hasLobbyByID(reaction.message.channelId);
   const notBot = user !== client.user;
   const isJoinEmoji = reaction.emoji.name === joinEmoji;
 
   // remove players from the lobby who unreact with joinEmoji
   if (isLobby && notBot && isJoinEmoji) {
-    const lobby = lobbyHandler.getLobbyByID(reaction.message.id);
+    const lobby = lobbyHandler.getLobbyByID(reaction.message.channelId);
     reaction.message.edit({ embeds: [lobby!.removePlayer(user.username!)] });
 
     // if there are not not enough players to start a game, remove the playEmoji
@@ -97,15 +94,10 @@ client.on("messageReactionRemove", (reaction, user) => {
 
 client.on("messageCreate", async (message) => {
   const repliedToBot = message.mentions.repliedUser === client.user;
+  const isLobby = lobbyHandler.hasLobbyByID(message.channelId);
 
-  if (repliedToBot) {
-    const messages = message.channel.messages;
-    const lobbies = lobbyHandler.getLobbies();
-
-    for (const _lobby of lobbies) {
-      const lobbyFromMessage = await messages.fetch(_lobby.getID()!);
-      if (lobbyFromMessage) return;
-    }
+  if (repliedToBot && isLobby) {
+    // do something
   }
 });
 
