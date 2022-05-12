@@ -1,3 +1,3 @@
-import GamesHandler from "./LobbyHandler";
+import LobbyHandler from "./LobbyHandler";
 
-export default GamesHandler;
+export default LobbyHandler;
