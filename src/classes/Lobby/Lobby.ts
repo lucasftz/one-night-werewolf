@@ -7,6 +7,7 @@ class Lobby {
   getID;
   addPlayer;
   removePlayer;
+  getPlayers: () => string[];
   private _players: string[];
   private _id?: string;
 
@@ -41,6 +42,8 @@ class Lobby {
       this.embed = newEmbed;
       return this.embed;
     };
+
+    this.getPlayers = () => this._players;
 
     this.addPlayer(creator.username);
   }

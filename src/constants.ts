@@ -1,3 +1,4 @@
 const prefix = ">";
+const emojis = { joinEmoji: "✅", playEmoji: "▶️" };
 
-export { prefix };
+export { prefix, emojis };
