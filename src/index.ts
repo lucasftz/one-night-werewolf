@@ -166,7 +166,7 @@ client.on("messageReactionRemove", (reaction, user) => {
     const lobby = lobbyHandler.getLobbyByID(reaction.message.channelId);
     reaction.message.edit({ embeds: [lobby!.removePlayer(user.username!)] });
 
-    // if there are not not enough players to start a game, remove playEmoji
+    // if there are not enough players to start a game, remove playEmoji
     if (lobby?.getPlayers().length ?? 0 < 2) {
       reaction.message.reactions.cache.get(playEmoji)?.remove();
     }
