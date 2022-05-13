@@ -145,7 +145,11 @@ client.on("messageReactionAdd", (reaction, user) => {
     // if the message was playEmoji...
     if (isPlayEmoji && lobby?.isReady()) {
       // start a game
-      const newGame = new Game(lobby?.getPlayers()!, lobby?.roles!);
+      const newGame = gameHandler.createGameAt(
+        reaction.message.channelId,
+        lobby?.getPlayers()!,
+        lobby?.roles!
+      );
       reaction.message.channel
         .send({ embeds: [newGame.embed] })
         .then((embedMessage) => newGame.setID(embedMessage.id));
