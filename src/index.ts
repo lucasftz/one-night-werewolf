@@ -141,14 +141,17 @@ client.on("messageReactionAdd", (reaction, user) => {
 
   // remove emojis from players that are not joinEmoji
   if (isLobby && notBot && !isJoinEmoji) {
-    const lobby = lobbyHandler.getLobbyByID(reaction.message.id);
-    // if the message was playEmoji, start a game
-    if (playEmoji && lobby!.getPlayers().length >= enoughPlayers) {
+    const lobby = lobbyHandler.getLobbyByID(reaction.message.channelId);
+    // if the message was playEmoji...
+    if (isPlayEmoji && lobby?.isReady()) {
+      // start a game
+      const newGame = new Game(lobby?.getPlayers()!, lobby?.roles!);
+      reaction.message.channel
+        .send({ embeds: [newGame.embed] })
+        .then((embedMessage) => newGame.setID(embedMessage.id));
+      // delete the lobby
       reaction.message.delete().catch((error) => console.log(error));
-      const game = new Game(lobby?.getPlayers()!);
-      gameHandler.addGame(game);
       lobbyHandler.removeLobbyByID(reaction.message.channelId);
-      reaction.message.channel.send({ embeds: [game.embed] });
     } else {
       reaction.remove().catch((error) => console.log(error));
       // but if the emoji was playEmoji, add it back

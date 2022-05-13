@@ -1,32 +1,36 @@
-import Game from "../Game/Game";
+import { User } from "discord.js";
+import Game from "../Game";
 
 class GameHandler {
-  private _games: Game[];
-  getGames: () => Game[];
-  addGame: (Game: Game) => void;
-  removeGame: (Game: Game) => void;
-  getGameByID: (id: string) => Game | undefined;
-  hasGameByID: (id: string) => boolean;
+  private _games: { [channelID: string]: Game };
+  createGameAt: (channelID: string, players: string[], roles: string[]) => Game;
+  removeGameByID: (channelID: string) => void;
+  getGameByID: (channelID: string) => Game | undefined;
+  hasGameByID: (channelID: string) => boolean;
 
   constructor() {
-    this._games = [];
+    this._games = {};
 
-    this.getGames = () => this._games;
-
-    this.addGame = (Game: Game) => {
-      this._games.push(Game);
+    this.createGameAt = (
+      channelID: string,
+      players: string[],
+      roles: string[]
+    ) => {
+      const newGame = new Game(players, roles);
+      this._games[channelID] = newGame;
+      return newGame;
     };
 
-    this.removeGame = (Game: Game) => {
-      this._games = this._games.filter((oldGame) => oldGame !== Game);
+    this.removeGameByID = (channelID: string) => {
+      delete this._games[channelID];
     };
 
-    this.getGameByID = (id: string) => {
-      return this._games.find((Game) => Game.getID() === id);
+    this.getGameByID = (channelID: string) => {
+      return this._games[channelID];
     };
 
-    this.hasGameByID = (id: string): boolean => {
-      return this._games.map((Game) => Game.getID()).includes(id);
+    this.hasGameByID = (channelID: string): boolean => {
+      return this._games.hasOwnProperty(channelID);
     };
   }
 }

@@ -1,18 +1,17 @@
-import { MessageEmbed } from "discord.js";
+import { MessageEmbed, User } from "discord.js";
+import { enoughPlayers } from "../../constants";
 
 class Game {
   // ATTRIBUTES
   embed;
   setID;
   getID;
-  private _players: string[];
   private _id?: string;
 
-  constructor(players: string[]) {
+  constructor(players: string[], roles: string[]) {
     this._id;
-    this._players = players;
     this.embed = new MessageEmbed()
-      .setDescription("this is a blank description")
+      .setDescription("One Night Werewolf")
       .setColor([255, 255, 255]);
 
     this.setID = (id: string) => {
