@@ -3,7 +3,7 @@ import Discord, { MessageEmbed } from "discord.js";
 import LobbyHandler from "./classes/LobbyHandler";
 import Game from "./classes/Game";
 import GameHandler from "./classes/GameHandler";
-import { prefix, emojis, roles } from "./constants";
+import { prefix, emojis, roles, enoughPlayers } from "./constants";
 import {
   isLobbyEror,
   noLobbyError,
@@ -135,14 +135,15 @@ client.on("messageReactionAdd", (reaction, user) => {
     reaction.message.edit({ embeds: [lobby!.addPlayer(user.username!)] });
 
     // if there are enough people to start a game, send playEmoji
-    if (lobby?.getPlayers().length === 2) reaction.message.react(playEmoji);
+    if (lobby?.getPlayers().length === enoughPlayers)
+      reaction.message.react(playEmoji);
   }
 
   // remove emojis from players that are not joinEmoji
   if (isLobby && notBot && !isJoinEmoji) {
     const lobby = lobbyHandler.getLobbyByID(reaction.message.id);
     // if the message was playEmoji, start a game
-    if (playEmoji && lobby!.getPlayers().length >= 2) {
+    if (playEmoji && lobby!.getPlayers().length >= enoughPlayers) {
       reaction.message.delete().catch((error) => console.log(error));
       const game = new Game(lobby?.getPlayers()!);
       gameHandler.addGame(game);
@@ -167,7 +168,7 @@ client.on("messageReactionRemove", (reaction, user) => {
     reaction.message.edit({ embeds: [lobby!.removePlayer(user.username!)] });
 
     // if there are not enough players to start a game, remove playEmoji
-    if (lobby?.getPlayers().length ?? 0 < 2) {
+    if (lobby?.getPlayers().length ?? 0 < enoughPlayers) {
       reaction.message.reactions.cache.get(playEmoji)?.remove();
     }
   }

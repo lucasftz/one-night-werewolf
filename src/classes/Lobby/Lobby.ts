@@ -1,4 +1,5 @@
 import { MessageEmbed, User } from "discord.js";
+import { enoughPlayers } from "../../constants";
 
 class Lobby {
   // ATTRIBUTES
@@ -11,6 +12,7 @@ class Lobby {
   roles: string[];
   addRole: (role: string, quantity: number) => MessageEmbed;
   removeRole: (role: string, quantity: number) => MessageEmbed;
+  isReady: () => boolean;
   private _players: string[];
   private _id?: string;
   private _updateEmbed;
@@ -83,6 +85,13 @@ class Lobby {
     };
 
     this.getPlayers = () => this._players;
+
+    this.isReady = () => {
+      const isEnoughPlayers = this._players.length >= enoughPlayers;
+      const isEnoughRoles = this.roles.length === this._players.length + 3;
+
+      return isEnoughPlayers && isEnoughRoles;
+    };
 
     this.addPlayer(creator.username);
   }
