@@ -23,18 +23,32 @@ const client = new Discord.Client({
 /* === HANDLE UNKNOWN COMMANDS ============================================= */
 
 client.on("messageCreate", (message) => {
-  if (message.content.startsWith(prefix)) {
+  const isBot = message.author === client.user;
+  const isTooShort = message.content.length === 1;
+  const isPossibleCommand =
+    !isBot && !isTooShort && message.content.at(1) !== " ";
+
+  if (isPossibleCommand && message.content.startsWith(prefix)) {
     const commandName = message.content.split(" ")[0].slice(1);
     if (!["create", "add", "remove", "help"].includes(commandName)) {
+      // if not a valid command, send an error
       const error = new CommandError();
       message.channel
         .send({ embeds: [error.embed] })
         .then((msg) => error.delete(msg));
     }
+
+    const isLobby = lobbyHandler.hasLobbyByID(message.channelId);
+    const isGame = gameHandler.hasGameByID(message.channelId);
+    // delete messages beginning with a prefix if there is a lobby or game going on
+    if (isLobby || isGame) {
+      message.delete().catch((error) => console.log(error));
+    }
   }
 });
 
 /* === HELP COMMAND ======================================================== */
+
 client.on("messageCreate", (message) => {
   if (message.content === prefix + "help") {
     const error = new NotImplementedError();
