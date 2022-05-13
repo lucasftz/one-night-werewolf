@@ -16,6 +16,7 @@ import { prefix, emojis, roles, enoughPlayers } from "./constants";
 const lobbyHandler = new LobbyHandler();
 const gameHandler = new GameHandler();
 const { joinEmoji, playEmoji } = emojis;
+const commands = ["create", "join", "leave", "add", "remove", "start", "help"];
 
 const client = new Discord.Client({
   intents: ["GUILDS", "GUILD_MESSAGES", "GUILD_MESSAGE_REACTIONS"],
@@ -31,7 +32,7 @@ client.on("messageCreate", (message) => {
 
   if (isPossibleCommand && message.content.startsWith(prefix)) {
     const commandName = message.content.split(" ")[0].slice(1);
-    if (!["create", "add", "remove", "help"].includes(commandName)) {
+    if (!commands.includes(commandName)) {
       // if not a valid command, send an error
       const error = new CommandError();
       message.channel
@@ -84,6 +85,57 @@ client.on("messageCreate", (message) => {
           newLobby.setID(embedMessage.id);
           embedMessage.react(joinEmoji);
         });
+    }
+  }
+});
+
+/* === JOIN COMMAND ======================================================== */
+
+client.on("messageCreate", async (message) => {
+  if (message.content === prefix + "join") {
+    if (lobbyHandler.hasLobbyByID(message.channelId)) {
+      // if there is a lobby
+      const user = message.author.username;
+      const lobby = lobbyHandler.getLobbyByID(message.channelId);
+      const inLobby = lobby?.getPlayers().includes(user);
+      const lobbyMessage = await message.channel.messages.fetch(
+        lobby?.getID()!
+      );
+      // leave the lobby if the user is not already in the lobby
+      if (!inLobby) {
+        lobbyMessage.edit({ embeds: [lobby?.addPlayer(user) as MessageEmbed] });
+      }
+    } else {
+      // if there is no lobby, send an error
+      const error = new NoLobbyError();
+      message.channel
+        .send({ embeds: [error.embed] })
+        .then((msg) => error.delete(msg));
+    }
+  }
+});
+
+/* === LEAVE COMMAND ======================================================= */
+
+client.on("messageCreate", async (message) => {
+  if (message.content === prefix + "leave") {
+    if (lobbyHandler.hasLobbyByID(message.channelId)) {
+      // if there is a lobby
+      const user = message.author.username;
+      const lobby = lobbyHandler.getLobbyByID(message.channelId);
+      const lobbyMessage = await message.channel.messages.fetch(
+        lobby?.getID()!
+      );
+      // leave the lobby
+      lobbyMessage.edit({
+        embeds: [lobby?.removePlayer(user) as MessageEmbed],
+      });
+    } else {
+      // if there is no lobby, send an error
+      const error = new NoLobbyError();
+      message.channel
+        .send({ embeds: [error.embed] })
+        .then((msg) => error.delete(msg));
     }
   }
 });
@@ -158,77 +210,49 @@ client.on("messageCreate", async (message) => {
   }
 });
 
-/* === LOBBY REACTION HANDLING ============================================= */
+/* === START COMMAND ======================================================= */
 
-client.on("messageReactionAdd", (reaction, user) => {
-  const isLobby = lobbyHandler.hasLobbyByID(reaction.message.channelId);
-  const notBot = user !== client.user;
-  const isJoinEmoji = reaction.emoji.name === joinEmoji;
-  const isPlayEmoji = reaction.emoji.name === playEmoji;
-
-  // add players to the lobby who react with <joinEmoji>
-  if (isLobby && notBot && isJoinEmoji) {
-    const lobby = lobbyHandler.getLobbyByID(reaction.message.channelId);
-    reaction.message.edit({ embeds: [lobby!.addPlayer(user.username!)] });
-
-    // if there are enough people to start a game, send <playEmoji>
-    if (lobby?.getPlayers().length === enoughPlayers)
-      reaction.message.react(playEmoji);
-  }
-
-  // remove emojis from players that are not <joinEmoji>
-  if (isLobby && notBot && !isJoinEmoji) {
-    const lobby = lobbyHandler.getLobbyByID(reaction.message.channelId);
-    // if the reaction was <playEmoji>...
-    if (isPlayEmoji && lobby?.isReady()) {
-      // start a game
-      const newGame = gameHandler.createGameAt(
-        reaction.message.channelId,
-        lobby?.getPlayers()!,
-        lobby?.roles!
-      );
-      reaction.message.channel
-        .send({ embeds: [newGame.embed] })
-        .then((embedMessage) => newGame.setID(embedMessage.id));
-      // delete the lobby
-      reaction.message.delete().catch((error) => console.log(error));
-      lobbyHandler.removeLobbyByID(reaction.message.channelId);
-    } else {
-      reaction.remove().catch((error) => console.log(error));
-      if (isPlayEmoji) {
-        if (lobby?.getPlayers().length! < enoughPlayers) {
-          // if there weren't enough players, send an error
-          const error = new NotEnoughError("players");
-          reaction.message.channel
-            .send({ embeds: [error.embed] })
-            .then((msg) => error.delete(msg));
-        } else {
-          // if there are enough players add it back
-          reaction.message.react(playEmoji);
-          // if there weren't enough roles, send an error
-          const error = new NotEnoughError("roles");
-          reaction.message.channel
-            .send({ embeds: [error.embed] })
-            .then((msg) => error.delete(msg));
-        }
+client.on("messageCreate", async (message) => {
+  if (message.content === prefix + "start") {
+    if (lobbyHandler.hasLobbyByID(message.channelId)) {
+      // if there is a lobby
+      const lobby = lobbyHandler.getLobbyByID(message.channelId);
+      const isReady = lobby?.isReady();
+      if (isReady) {
+        // if the lobby is ready, start a game
+        const newGame = gameHandler.createGameAt(
+          message.channelId,
+          lobby?.getPlayers()!,
+          lobby?.roles!
+        );
+        message.channel
+          .send({ embeds: [newGame.embed] })
+          .then((embedMessage) => newGame.setID(embedMessage.id));
+        // delete the lobby
+        const lobbyMessage = await message.channel.messages.fetch(
+          lobby?.getID()!
+        );
+        lobbyMessage.delete().catch((error) => console.log(error));
+        lobbyHandler.removeLobbyByID(message.channelId);
+      } else if (lobby?.getPlayers().length! < enoughPlayers) {
+        // if there aren't enough players, send an error
+        const error = new NotEnoughError("players");
+        message.channel
+          .send({ embeds: [error.embed] })
+          .then((msg) => error.delete(msg));
+      } else {
+        // if there aren't enough roles, send an error
+        const error = new NotEnoughError("roles");
+        message.channel
+          .send({ embeds: [error.embed] })
+          .then((msg) => error.delete(msg));
       }
-    }
-  }
-});
-
-client.on("messageReactionRemove", (reaction, user) => {
-  const isLobby = lobbyHandler.hasLobbyByID(reaction.message.channelId);
-  const notBot = user !== client.user;
-  const isJoinEmoji = reaction.emoji.name === joinEmoji;
-
-  // remove players from the lobby who unreact with <joinEmoji>
-  if (isLobby && notBot && isJoinEmoji) {
-    const lobby = lobbyHandler.getLobbyByID(reaction.message.channelId);
-    reaction.message.edit({ embeds: [lobby!.removePlayer(user.username!)] });
-
-    // if there are not enough players to start a game, remove <playEmoji>
-    if (lobby?.getPlayers().length ?? 0 < enoughPlayers) {
-      reaction.message.reactions.cache.get(playEmoji)?.remove();
+    } else {
+      // if there is no lobby, send an error
+      const error = new NoLobbyError();
+      message.channel
+        .send({ embeds: [error.embed] })
+        .then((msg) => error.delete(msg));
     }
   }
 });
