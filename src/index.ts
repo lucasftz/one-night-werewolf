@@ -1,5 +1,6 @@
 import "dotenv/config";
-import Discord, { MessageEmbed } from "discord.js";
+import Discord from "discord.js";
+import { edit } from "./utils";
 // handlers
 import LobbyHandler from "./modules/LobbyHandler";
 import GameHandler from "./modules/GameHandler";
@@ -15,7 +16,7 @@ import { prefix, emojis, roles, enoughPlayers } from "./constants";
 
 const lobbyHandler = new LobbyHandler();
 const gameHandler = new GameHandler();
-const { joinEmoji, playEmoji } = emojis;
+const { joinEmoji } = emojis;
 const commands = ["create", "join", "leave", "add", "remove", "start", "help"];
 
 const client = new Discord.Client({
@@ -102,9 +103,7 @@ client.on("messageCreate", async (message) => {
         lobby?.getID()!
       );
       // leave the lobby if the user is not already in the lobby
-      if (!inLobby) {
-        lobbyMessage.edit({ embeds: [lobby?.addPlayer(user) as MessageEmbed] });
-      }
+      if (!inLobby) edit(lobbyMessage, lobby?.addPlayer(user)!);
     } else {
       // if there is no lobby, send an error
       const error = new NoLobbyError();
@@ -127,9 +126,7 @@ client.on("messageCreate", async (message) => {
         lobby?.getID()!
       );
       // leave the lobby
-      lobbyMessage.edit({
-        embeds: [lobby?.removePlayer(user) as MessageEmbed],
-      });
+      edit(lobbyMessage, lobby?.removePlayer(user)!);
     } else {
       // if there is no lobby, send an error
       const error = new NoLobbyError();
@@ -162,11 +159,7 @@ client.on("messageCreate", async (message) => {
     const lobby = lobbyHandler.getLobbyByID(message.channelId);
     const lobbyMessage = await message.channel.messages.fetch(lobby?.getID()!);
 
-    lobbyMessage.edit({
-      embeds: [
-        lobby?.addRole(role as string, quantity as number) as MessageEmbed,
-      ],
-    });
+    edit(lobbyMessage, lobby?.addRole(role as string, quantity as number)!);
   } else {
     const error = new NoLobbyError();
     message.channel
@@ -197,11 +190,7 @@ client.on("messageCreate", async (message) => {
     const lobby = lobbyHandler.getLobbyByID(message.channelId);
     const lobbyMessage = await message.channel.messages.fetch(lobby?.getID()!);
 
-    lobbyMessage.edit({
-      embeds: [
-        lobby?.removeRole(role as string, quantity as number) as MessageEmbed,
-      ],
-    });
+    edit(lobbyMessage, lobby?.removeRole(role as string, quantity as number)!);
   } else {
     const error = new NoLobbyError();
     message.channel
