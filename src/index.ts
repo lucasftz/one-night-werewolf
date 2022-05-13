@@ -1,10 +1,10 @@
 import "dotenv/config";
-import Discord from "discord.js";
+import Discord, { MessageEmbed } from "discord.js";
 import LobbyHandler from "./classes/LobbyHandler";
 import Game from "./classes/Game";
 import GameHandler from "./classes/GameHandler";
-import { prefix, emojis } from "./constants";
-import { isLobbyEror } from "./constants/errors";
+import { prefix, emojis, roles } from "./constants";
+import { isLobbyEror, commandError } from "./constants/errors";
 
 const lobbyHandler = new LobbyHandler();
 const gameHandler = new GameHandler();
@@ -14,14 +14,10 @@ const client = new Discord.Client({
   intents: ["GUILDS", "GUILD_MESSAGES", "GUILD_MESSAGE_REACTIONS"],
 });
 
-client.on("ready", () => {
-  console.log(`Logged in as ${client.user?.tag}`);
-});
-
-/* === CREATE ============================================================== */
+/* === CREATE COMMAND ====================================================== */
 
 client.on("messageCreate", (message) => {
-  if (message.content === `${prefix}create`) {
+  if (message.content === prefix + "create") {
     // check if a lobby doesn't already exist in the channel
     if (lobbyHandler.hasLobbyByID(message.channelId)) {
       // if there already is a lobby in the channel, don't create a new lobby
@@ -37,20 +33,72 @@ client.on("messageCreate", (message) => {
         .then((embedMessage) => {
           newLobby.setID(embedMessage.id);
           embedMessage.react(joinEmoji);
-        })
-        .catch((error) => console.log(error));
+        });
     }
   }
 });
 
-/* === ADD <ROLE> ========================================================== */
+/* === ADD <ROLE> COMMAND ================================================== */
 
 client.on("messageCreate", async (message) => {
-  const repliedToBot = message.mentions.repliedUser === client.user;
+  if (!message.content.startsWith(prefix + "add")) return;
   const isLobby = lobbyHandler.hasLobbyByID(message.channelId);
 
-  if (repliedToBot && isLobby) {
-    // do something
+  if (isLobby) {
+    const command = message.content.slice(1).split(" ").slice(1);
+    let role, quantity;
+
+    switch (true) {
+      case roles.includes(command[0]):
+        [role, quantity] = [command[0], 1];
+        break;
+      case parseInt(command[0]) > 0 && roles.includes(command[1]):
+        [role, quantity] = [command[1], parseInt(command[0])];
+        break;
+      default:
+        message.channel.send({ embeds: [commandError] });
+    }
+
+    const lobby = lobbyHandler.getLobbyByID(message.channelId);
+    const lobbyMessage = await message.channel.messages.fetch(lobby?.getID()!);
+
+    lobbyMessage.edit({
+      embeds: [
+        lobby?.addRole(role as string, quantity as number) as MessageEmbed,
+      ],
+    });
+  }
+});
+
+/* === REMOVE <ROLE> COMMAND =============================================== */
+
+client.on("messageCreate", async (message) => {
+  if (!message.content.startsWith(prefix + "remove")) return;
+  const isLobby = lobbyHandler.hasLobbyByID(message.channelId);
+
+  if (isLobby) {
+    const command = message.content.slice(1).split(" ").slice(1);
+    let role, quantity;
+
+    switch (true) {
+      case roles.includes(command[0]):
+        [role, quantity] = [command[0], 1];
+        break;
+      case parseInt(command[0]) > 0 && roles.includes(command[1]):
+        [role, quantity] = [command[1], parseInt(command[0])];
+        break;
+      default:
+        message.channel.send({ embeds: [commandError] });
+    }
+
+    const lobby = lobbyHandler.getLobbyByID(message.channelId);
+    const lobbyMessage = await message.channel.messages.fetch(lobby?.getID()!);
+
+    lobbyMessage.edit({
+      embeds: [
+        lobby?.removeRole(role as string, quantity as number) as MessageEmbed,
+      ],
+    });
   }
 });
 

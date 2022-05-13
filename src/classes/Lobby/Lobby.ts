@@ -9,7 +9,8 @@ class Lobby {
   removePlayer;
   getPlayers: () => string[];
   roles: string[];
-  addRole: (role: string) => MessageEmbed;
+  addRole: (role: string, quantity: number) => MessageEmbed;
+  removeRole: (role: string, quantity: number) => MessageEmbed;
   private _players: string[];
   private _id?: string;
   private _updateEmbed;
@@ -27,9 +28,26 @@ class Lobby {
     };
     this.getID = () => this._id;
 
-    this.addRole = (role: string) => {
-      if (this.roles.length !== this._players.length + 3) this.roles.push(role);
-      return this._updateEmbed();
+    this.addRole = (role: string, quantity: number) => {
+      for (let i = 1; i <= quantity; i++) {
+        if (this.roles.length < this._players.length + 3) this.roles.push(role);
+      }
+      this.embed = this._updateEmbed();
+      return this.embed;
+    };
+
+    this.removeRole = (role: string, quantity: number) => {
+      if (this.roles.includes(role)) {
+        for (let i = 1; i <= quantity; i++) {
+          const index = this.roles.lastIndexOf(role);
+          this.roles = [
+            ...this.roles.slice(0, index),
+            ...this.roles.slice(index + 1),
+          ];
+        }
+      }
+      this.embed = this._updateEmbed();
+      return this.embed;
     };
 
     this.addPlayer = (newPlayer: string) => {
