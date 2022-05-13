@@ -1,6 +1,5 @@
 const prefix = ">";
 const enoughPlayers = 2;
-const emojis = { joinEmoji: "✅", playEmoji: "▶️" };
 const roles = [
   "villager",
   "werewolf",
@@ -12,4 +11,4 @@ const roles = [
   "minion",
 ];
 
-export { prefix, emojis, roles, enoughPlayers };
+export { prefix, roles, enoughPlayers };

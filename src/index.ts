@@ -12,11 +12,10 @@ import CommandError from "./modules/Errors/CommandError";
 import NotImplementedError from "./modules/Errors/NotImplementedError";
 import NotEnoughError from "./modules/Errors/NotEnoughError";
 // constants
-import { prefix, emojis, roles, enoughPlayers } from "./constants";
+import { prefix, roles, enoughPlayers } from "./constants";
 
 const lobbyHandler = new LobbyHandler();
 const gameHandler = new GameHandler();
-const { joinEmoji } = emojis;
 const commands = ["create", "join", "leave", "add", "remove", "start", "help"];
 
 const client = new Discord.Client({
@@ -84,7 +83,6 @@ client.on("messageCreate", (message) => {
         .send({ embeds: [newLobby.embed] })
         .then((embedMessage) => {
           newLobby.setID(embedMessage.id);
-          embedMessage.react(joinEmoji);
         });
     }
   }
