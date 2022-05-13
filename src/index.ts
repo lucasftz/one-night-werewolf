@@ -9,6 +9,7 @@ import NoLobbyError from "./modules/Errors/NoLobbyError";
 import IsGameError from "./modules/Errors/IsGameError";
 import CommandError from "./modules/Errors/CommandError";
 import NotImplementedError from "./modules/Errors/NotImplementedError";
+import NotEnoughError from "./modules/Errors/NotEnoughError";
 // constants
 import { prefix, emojis, roles, enoughPlayers } from "./constants";
 
@@ -169,20 +170,20 @@ client.on("messageReactionAdd", (reaction, user) => {
   const isJoinEmoji = reaction.emoji.name === joinEmoji;
   const isPlayEmoji = reaction.emoji.name === playEmoji;
 
-  // add players to the lobby who react with joinEmoji
+  // add players to the lobby who react with <joinEmoji>
   if (isLobby && notBot && isJoinEmoji) {
     const lobby = lobbyHandler.getLobbyByID(reaction.message.channelId);
     reaction.message.edit({ embeds: [lobby!.addPlayer(user.username!)] });
 
-    // if there are enough people to start a game, send playEmoji
+    // if there are enough people to start a game, send <playEmoji>
     if (lobby?.getPlayers().length === enoughPlayers)
       reaction.message.react(playEmoji);
   }
 
-  // remove emojis from players that are not joinEmoji
+  // remove emojis from players that are not <joinEmoji>
   if (isLobby && notBot && !isJoinEmoji) {
     const lobby = lobbyHandler.getLobbyByID(reaction.message.channelId);
-    // if the message was playEmoji...
+    // if the reaction was <playEmoji>...
     if (isPlayEmoji && lobby?.isReady()) {
       // start a game
       const newGame = gameHandler.createGameAt(
@@ -198,8 +199,23 @@ client.on("messageReactionAdd", (reaction, user) => {
       lobbyHandler.removeLobbyByID(reaction.message.channelId);
     } else {
       reaction.remove().catch((error) => console.log(error));
-      // but if the emoji was playEmoji, add it back
-      if (isPlayEmoji) reaction.message.react(playEmoji);
+      if (isPlayEmoji) {
+        if (lobby?.getPlayers().length! < enoughPlayers) {
+          // if there weren't enough players, send an error
+          const error = new NotEnoughError("players");
+          reaction.message.channel
+            .send({ embeds: [error.embed] })
+            .then((msg) => error.delete(msg));
+        } else {
+          // if there are enough players add it back
+          reaction.message.react(playEmoji);
+          // if there weren't enough roles, send an error
+          const error = new NotEnoughError("roles");
+          reaction.message.channel
+            .send({ embeds: [error.embed] })
+            .then((msg) => error.delete(msg));
+        }
+      }
     }
   }
 });
@@ -209,12 +225,12 @@ client.on("messageReactionRemove", (reaction, user) => {
   const notBot = user !== client.user;
   const isJoinEmoji = reaction.emoji.name === joinEmoji;
 
-  // remove players from the lobby who unreact with joinEmoji
+  // remove players from the lobby who unreact with <joinEmoji>
   if (isLobby && notBot && isJoinEmoji) {
     const lobby = lobbyHandler.getLobbyByID(reaction.message.channelId);
     reaction.message.edit({ embeds: [lobby!.removePlayer(user.username!)] });
 
-    // if there are not enough players to start a game, remove playEmoji
+    // if there are not enough players to start a game, remove <playEmoji>
     if (lobby?.getPlayers().length ?? 0 < enoughPlayers) {
       reaction.message.reactions.cache.get(playEmoji)?.remove();
     }
