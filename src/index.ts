@@ -1,13 +1,13 @@
 import "dotenv/config";
 import Discord, { MessageEmbed } from "discord.js";
 // handlers
-import LobbyHandler from "./classes/LobbyHandler";
-import GameHandler from "./classes/GameHandler";
+import LobbyHandler from "./modules/LobbyHandler";
+import GameHandler from "./modules/GameHandler";
 // errors
-import IsLobbyError from "./classes/Errors/IsLobbyError";
-import NoLobbyError from "./classes/Errors/NoLobbyError";
-import CommandError from "./classes/Errors/CommandError";
-import NotImplementedError from "./classes/Errors/NotImplementedError";
+import IsLobbyError from "./modules/Errors/IsLobbyError";
+import NoLobbyError from "./modules/Errors/NoLobbyError";
+import CommandError from "./modules/Errors/CommandError";
+import NotImplementedError from "./modules/Errors/NotImplementedError";
 // constants
 import { prefix, emojis, roles, enoughPlayers } from "./constants";
 
