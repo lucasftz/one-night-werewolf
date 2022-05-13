@@ -45,7 +45,7 @@ class Lobby {
             ...this.roles.slice(index + 1),
           ];
         }
-      }
+      } else if (role === "all") this.roles = [];
       this.embed = this._updateEmbed();
       return this.embed;
     };

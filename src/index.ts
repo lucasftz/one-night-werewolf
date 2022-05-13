@@ -4,7 +4,12 @@ import LobbyHandler from "./classes/LobbyHandler";
 import Game from "./classes/Game";
 import GameHandler from "./classes/GameHandler";
 import { prefix, emojis, roles } from "./constants";
-import { isLobbyEror, commandError } from "./constants/errors";
+import {
+  isLobbyEror,
+  noLobbyError,
+  commandError,
+  notImplementedError,
+} from "./constants/errors";
 
 const lobbyHandler = new LobbyHandler();
 const gameHandler = new GameHandler();
@@ -12,6 +17,24 @@ const { joinEmoji, playEmoji } = emojis;
 
 const client = new Discord.Client({
   intents: ["GUILDS", "GUILD_MESSAGES", "GUILD_MESSAGE_REACTIONS"],
+});
+
+/* === HANDLE UNKNOWN COMMANDS ============================================= */
+
+client.on("messageCreate", (message) => {
+  if (message.content.startsWith(prefix)) {
+    const commandName = message.content.split(" ")[0].slice(1);
+    if (!["create", "add", "remove", "help"].includes(commandName)) {
+      message.channel.send({ embeds: [commandError] });
+    }
+  }
+});
+
+/* === HELP COMMAND ======================================================== */
+client.on("messageCreate", (message) => {
+  if (message.content === prefix + "help") {
+    message.channel.send({ embeds: [notImplementedError] });
+  }
 });
 
 /* === CREATE COMMAND ====================================================== */
@@ -55,8 +78,6 @@ client.on("messageCreate", async (message) => {
       case parseInt(command[0]) > 0 && roles.includes(command[1]):
         [role, quantity] = [command[1], parseInt(command[0])];
         break;
-      default:
-        message.channel.send({ embeds: [commandError] });
     }
 
     const lobby = lobbyHandler.getLobbyByID(message.channelId);
@@ -67,7 +88,7 @@ client.on("messageCreate", async (message) => {
         lobby?.addRole(role as string, quantity as number) as MessageEmbed,
       ],
     });
-  }
+  } else message.channel.send({ embeds: [noLobbyError] });
 });
 
 /* === REMOVE <ROLE> COMMAND =============================================== */
@@ -81,14 +102,12 @@ client.on("messageCreate", async (message) => {
     let role, quantity;
 
     switch (true) {
-      case roles.includes(command[0]):
+      case [...roles, "all"].includes(command[0]):
         [role, quantity] = [command[0], 1];
         break;
       case parseInt(command[0]) > 0 && roles.includes(command[1]):
         [role, quantity] = [command[1], parseInt(command[0])];
         break;
-      default:
-        message.channel.send({ embeds: [commandError] });
     }
 
     const lobby = lobbyHandler.getLobbyByID(message.channelId);
@@ -99,7 +118,7 @@ client.on("messageCreate", async (message) => {
         lobby?.removeRole(role as string, quantity as number) as MessageEmbed,
       ],
     });
-  }
+  } else message.channel.send({ embeds: [noLobbyError] });
 });
 
 /* === LOBBY REACTION HANDLING ============================================= */
