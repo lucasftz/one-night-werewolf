@@ -1,15 +1,15 @@
 import "dotenv/config";
 import Discord, { MessageEmbed } from "discord.js";
+// handlers
 import LobbyHandler from "./classes/LobbyHandler";
-import Game from "./classes/Game";
 import GameHandler from "./classes/GameHandler";
+// errors
+import IsLobbyError from "./classes/Errors/IsLobbyError";
+import NoLobbyError from "./classes/Errors/NoLobbyError";
+import CommandError from "./classes/Errors/CommandError";
+import NotImplementedError from "./classes/Errors/NotImplementedError";
+// constants
 import { prefix, emojis, roles, enoughPlayers } from "./constants";
-import {
-  isLobbyEror,
-  noLobbyError,
-  commandError,
-  notImplementedError,
-} from "./constants/errors";
 
 const lobbyHandler = new LobbyHandler();
 const gameHandler = new GameHandler();
@@ -25,7 +25,10 @@ client.on("messageCreate", (message) => {
   if (message.content.startsWith(prefix)) {
     const commandName = message.content.split(" ")[0].slice(1);
     if (!["create", "add", "remove", "help"].includes(commandName)) {
-      message.channel.send({ embeds: [commandError] });
+      const error = new CommandError();
+      message.channel
+        .send({ embeds: [error.embed] })
+        .then((msg) => error.delete(msg));
     }
   }
 });
@@ -33,7 +36,10 @@ client.on("messageCreate", (message) => {
 /* === HELP COMMAND ======================================================== */
 client.on("messageCreate", (message) => {
   if (message.content === prefix + "help") {
-    message.channel.send({ embeds: [notImplementedError] });
+    const error = new NotImplementedError();
+    message.channel
+      .send({ embeds: [error.embed] })
+      .then((msg) => error.delete(msg));
   }
 });
 
@@ -43,8 +49,11 @@ client.on("messageCreate", (message) => {
   if (message.content === prefix + "create") {
     // check if a lobby doesn't already exist in the channel
     if (lobbyHandler.hasLobbyByID(message.channelId)) {
-      // if there already is a lobby in the channel, don't create a new lobby
-      message.channel.send({ embeds: [isLobbyEror] });
+      // if there already is a lobby in the channel, send an error
+      const error = new IsLobbyError();
+      message.channel
+        .send({ embeds: [error.embed] })
+        .then((msg) => error.delete(msg));
     } else {
       // otherwise, do create a new lobby
       const newLobby = lobbyHandler.createLobbyAt(
@@ -88,7 +97,12 @@ client.on("messageCreate", async (message) => {
         lobby?.addRole(role as string, quantity as number) as MessageEmbed,
       ],
     });
-  } else message.channel.send({ embeds: [noLobbyError] });
+  } else {
+    const error = new NoLobbyError();
+    message.channel
+      .send({ embeds: [error.embed] })
+      .then((msg) => error.delete(msg));
+  }
 });
 
 /* === REMOVE <ROLE> COMMAND =============================================== */
@@ -118,7 +132,12 @@ client.on("messageCreate", async (message) => {
         lobby?.removeRole(role as string, quantity as number) as MessageEmbed,
       ],
     });
-  } else message.channel.send({ embeds: [noLobbyError] });
+  } else {
+    const error = new NoLobbyError();
+    message.channel
+      .send({ embeds: [error.embed] })
+      .then((msg) => error.delete(msg));
+  }
 });
 
 /* === LOBBY REACTION HANDLING ============================================= */

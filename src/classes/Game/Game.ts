@@ -1,5 +1,4 @@
 import { MessageEmbed, User } from "discord.js";
-import { enoughPlayers } from "../../constants";
 
 class Game {
   // ATTRIBUTES

@@ -1,4 +1,3 @@
-import { User } from "discord.js";
 import Game from "../Game";
 
 class GameHandler {
