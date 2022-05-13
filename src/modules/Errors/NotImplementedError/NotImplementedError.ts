@@ -2,7 +2,7 @@ import BaseError from "../BaseError";
 
 class NotImplementedError extends BaseError {
   constructor(
-    description = "Sorry, this feature has not yet been implemented yet!"
+    description = "Sorry, this feature has not been implemented yet!"
   ) {
     super(description);
   }
