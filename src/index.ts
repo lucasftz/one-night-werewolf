@@ -64,15 +64,11 @@ client.on("messageCreate", (message) => {
 client.on("messageCreate", (message) => {
   if (message.content === prefix + "create") {
     // check if a lobby doesn't already exist in the channel
-    if (lobbyHandler.hasLobbyByID(message.channelId)) {
-      // if there already is a lobby in the channel, send an error
-      const error = new IsLobbyError();
-      message.channel
-        .send({ embeds: [error.embed] })
-        .then((msg) => error.delete(msg));
-    } else if (gameHandler.hasGameByID(message.channelId)) {
-      // if there already is a game in the channel, send an error
-      const error = new IsGameError();
+    const isLobby = lobbyHandler.hasLobbyByID(message.channelId);
+    const isGame = gameHandler.hasGameByID(message.channelId);
+    if (isLobby || isGame) {
+      // if there already is a lobby or a game in the channel, send an error
+      const error = isLobby ? new IsLobbyError() : new IsGameError();
       message.channel
         .send({ embeds: [error.embed] })
         .then((msg) => error.delete(msg));
